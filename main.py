@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, HTTPException
 from sqlmodel import Session
@@ -25,6 +26,6 @@ class GDArchiveRead(SQLModel):
 @app.get("/level/{level_id}", response_model=GDArchiveRead)
 def get_level(level_id: int, session: Session = Depends(get_session)):
     level = session.get(GDArchive, level_id)
-    if not (level and level.recorded and level.uploaded):
+    if not (level and level.recorded and level.uploaded and level.upload_time_est <= datetime.now(ZoneInfo("America/New_York"))):
         raise HTTPException(status_code=404, detail="Level not found")
     return level
