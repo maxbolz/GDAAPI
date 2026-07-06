@@ -17,7 +17,6 @@ class GDArchiveRead(SQLModel):
     level_name: str
     creator: str
     recorder: Optional[str]
-    as_of: datetime
     link: List[str]
     upload_time_est: Optional[datetime]
     as_of: datetime
@@ -27,10 +26,16 @@ class GDArchiveRead(SQLModel):
 def get_level(level_id: int, session: Session = Depends(get_session)):
     level = session.get(GDArchive, level_id)
 
+    if level is None:
+        raise HTTPException(status_code=404, detail="Level not found")
+    if not (level.recorded and level.uploaded):
+        raise HTTPException(status_code=404, detail="Level not found")
+
     est = ZoneInfo("America/New_York")
     est_now = datetime.now(est)
     upload_time = level.upload_time_est.replace(tzinfo=est)
-
-    if not (level and level.recorded and level.uploaded and upload_time <= est_now):
+    
+    if upload_time is None or upload_time > est_now:
         raise HTTPException(status_code=404, detail="Level not found")
+    
     return level
