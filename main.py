@@ -26,6 +26,11 @@ class GDArchiveRead(SQLModel):
 @app.get("/level/{level_id}", response_model=GDArchiveRead)
 def get_level(level_id: int, session: Session = Depends(get_session)):
     level = session.get(GDArchive, level_id)
-    if not (level and level.recorded and level.uploaded and level.upload_time_est <= datetime.now(ZoneInfo("America/New_York"))):
+
+    est = ZoneInfo("America/New_York")
+    est_now = datetime.now(est)
+    upload_time = level.upload_time_est.replace(tzinfo=est)
+
+    if not (level and level.recorded and level.uploaded and upload_time <= est_now):
         raise HTTPException(status_code=404, detail="Level not found")
     return level
