@@ -32,12 +32,10 @@ def fetch_sheet_csv(url: str) -> pd.DataFrame:
  
  
 def clean_yes_no_symbol(value: str) -> bool:
-    """Turns things like '✔', 'TRUE', 'x', '1' into a real boolean."""
     return value.strip() in ("✔", "TRUE", "true", "1", "x", "X", "yes")
  
  
 def clean_star_rating(value: str):
-    """'10⭐' -> 10 (int), '' -> None"""
     value = value.strip()
     if not value:
         return None
@@ -46,7 +44,6 @@ def clean_star_rating(value: str):
  
  
 def clean_length_to_seconds(value: str):
-    """'1:15' -> 75 (int seconds). Adjust if you'd rather keep it as text."""
     value = value.strip()
     if not value:
         return None
@@ -62,7 +59,6 @@ def clean_length_to_seconds(value: str):
  
  
 def clean_coins(value: str) -> int:
-    """Coins is a count of emoji (0-3), e.g. '', '💿', '💿💿', '💿💿💿' -> 0, 1, 2, 3."""
     value = value.strip()
     return len(value)
  
@@ -91,7 +87,6 @@ def clean_upload_time(value: str):
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
  
-    # Strip whitespace from every text field first
     for col in df.columns:
         df[col] = df[col].astype(str).str.strip()
  
@@ -108,7 +103,6 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     df["Upload Time (EST)"] = df["Upload Time (EST)"].apply(clean_upload_time)
     df["As Of"] = datetime.now()
  
-    # Drop rows with no ID — nothing to key an upsert on
     df = df.dropna(subset=["ID"])
  
     return df
@@ -121,8 +115,6 @@ INSERT_COLUMNS = [
  
  
 def upsert(df: pd.DataFrame):
-    # Convert pandas NA / NaT / NaN to plain Python None so psycopg2 inserts
-    # real NULLs instead of choking on pandas-specific null types.
     df = df.astype(object).where(pd.notnull(df), None)
  
     rows = [tuple(row[col] for col in INSERT_COLUMNS) for _, row in df.iterrows()]
